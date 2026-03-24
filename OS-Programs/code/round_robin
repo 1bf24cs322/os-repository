@@ -1,0 +1,85 @@
+#include <stdio.h>
+
+struct Process {
+    int pid, at, bt, rt, ct, tat, wt;
+};
+
+int main() {
+    int n, tq;
+    printf("Enter number of processes: ");
+    scanf("%d", &n);
+    printf("Enter time quantum: ");
+    scanf("%d", &tq);
+
+    struct Process p[n];
+    for (int i = 0; i < n; i++) {
+        p[i].pid = i + 1;
+        printf("Enter arrival time and burst time of P%d: ", i + 1);
+        scanf("%d %d", &p[i].at, &p[i].bt);
+        p[i].rt = p[i].bt;
+        p[i].ct = p[i].tat = p[i].wt = 0;
+    }
+
+    int current_time = 0, completed = 0;
+    float total_tat = 0, total_wt = 0;
+
+    int queue[100], front = 0, rear = 0;
+
+    while (completed < n) {
+
+        for (int i = 0; i < n; i++) {
+            if (p[i].at <= current_time && p[i].rt > 0) {
+                int already_in = 0;
+                for (int j = front; j < rear; j++) {
+                    if (queue[j] == i) { already_in = 1; break; }
+                }
+                if (!already_in) queue[rear++] = i;
+            }
+        }
+
+        if (front == rear) {
+            current_time++;
+            continue;
+        }
+
+        int idx = queue[front++];
+
+        int exec_time = (p[idx].rt > tq) ? tq : p[idx].rt;
+        p[idx].rt -= exec_time;
+        current_time += exec_time;
+
+        for (int i = 0; i < n; i++) {
+            if (p[i].at <= current_time && p[i].rt > 0) {
+                int already_in = 0;
+                for (int j = front; j < rear; j++) {
+                    if (queue[j] == i) { already_in = 1; break; }
+                }
+                if (!already_in) queue[rear++] = i;
+            }
+        }
+
+        if (p[idx].rt > 0) {
+            queue[rear++] = idx;
+        } else {
+            p[idx].ct = current_time;
+            p[idx].tat = p[idx].ct - p[idx].at;
+            p[idx].wt = p[idx].tat - p[idx].bt;
+            total_tat += p[idx].tat;
+            total_wt += p[idx].wt;
+            completed++;
+        }
+    }
+
+    printf("\nRound Robin Scheduling:\n");
+    printf("PID\tAT\tBT\tCT\tTAT\tWT\n");
+    for (int i = 0; i < n; i++) {
+        printf("%d\t%d\t%d\t%d\t%d\t%d\n",
+               p[i].pid, p[i].at, p[i].bt,
+               p[i].ct, p[i].tat, p[i].wt);
+    }
+
+    printf("\nAverage Turnaround Time: %.2f ms", total_tat / n);
+    printf("\nAverage Waiting Time: %.2f ms\n", total_wt / n);
+
+    return 0;
+}
