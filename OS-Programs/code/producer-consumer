@@ -1,0 +1,113 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define SIZE 5
+
+int stack[SIZE];
+int top = -1;
+
+// Semaphore variables
+int empty = SIZE;
+int full = 0;
+int mutex = 1;
+
+// WAIT operation
+void wait(int *s) {
+    (*s)--;
+}
+
+void signal(int *s) {
+    (*s)++;
+}
+
+
+void producer() {
+    int item;
+
+    if (empty == 0) {
+        printf("\nBuffer is FULL! Producer cannot produce.\n");
+        return;
+    }
+
+    printf("\n[ENTRY] Enter item to produce: ");
+    scanf("%d", &item);
+
+    wait(&empty);
+    wait(&mutex);
+
+    // CRITICAL SECTION (push into stack)
+    top++;
+    stack[top] = item;
+    printf("[CRITICAL] Produced item %d at position %d\n", item, top);
+
+    signal(&mutex);
+    signal(&full);
+
+    printf("[EXIT] Producer done\n");
+}
+
+void consumer() {
+    int item;
+
+    if (full == 0) {
+        printf("\nBuffer is EMPTY! Consumer cannot consume.\n");
+        return;
+    }
+
+    wait(&full);
+    wait(&mutex);
+
+    item = stack[top];
+    printf("[CRITICAL] Consumed item %d from position %d\n", item, top);
+    top--;
+
+    signal(&mutex);
+    signal(&empty);
+
+    
+    printf("[EXIT] Consumer done\n");
+}
+
+
+void display() {
+    int i;
+    if (top == -1) {
+        printf("\nStack is empty\n");
+        return;
+    }
+
+    printf("\nStack contents: ");
+    for (i = top; i >= 0; i--) {
+        printf("%d ", stack[i]);
+    }
+    printf("\n");
+}
+
+int main() {
+    int choice;
+
+    while (1) {
+        printf("\n--- Producer Consumer (Stack) ---\n");
+        printf("1. Produce\n2. Consume\n3. Display\n4. Exit\n");
+        printf("Enter choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1:
+                producer();
+                break;
+            case 2:
+                consumer();
+                break;
+            case 3:
+                display();
+                break;
+            case 4:
+                exit(0);
+            default:
+                printf("Invalid choice\n");
+        }
+    }
+
+    return 0;
+}
